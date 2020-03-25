@@ -6,7 +6,7 @@
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Point.h>
 
-// include math 
+// include math
 #include <math.h>
 
 using namespace std;
@@ -27,10 +27,11 @@ struct XYZ pos_err;
 void pos_cb(const turtlesim::Pose::ConstPtr& msg)
 {
   pose = *msg;
-} 
+}
 
 int main(int argc, char **argv)
 {
+
   ros::init(argc, argv, "tutorial_1");
   ros::NodeHandle n;
 
@@ -47,6 +48,9 @@ int main(int argc, char **argv)
   ros::Rate loop_rate(10);
 
   int count = 0;
+  float r = 0;
+  float theta = 0;
+
   while (ros::ok()){
 
     printf("\ncount : %d\n",count);
@@ -56,16 +60,31 @@ int main(int argc, char **argv)
     // Calculate position error(feedback term)
     pos_err.x = goal_point.x - pose.x;
     pos_err.y = goal_point.y - pose.y;
-    
-    /*Your error-driven controller design
-     *-->
-     *
-     *
-     *
-     *
-     */
-    /*vel_msg.linear.x = (Your control input design);
-     *vel_msg.angular.z = (Your control input design);*/
+
+    r = sqrt(pow(pos_err.x, 2.0) + pow(pos_err.y, 2.0));
+
+    if (pos_err.x >= 0 && pos_err.y >= 0){
+        theta = atan(pos_err.y/pos_err.x) - pose.theta;
+    }
+    if (pos_err.x < 0 && pos_err.y >= 0){
+        theta = M_PI - atan(-pos_err.y/pos_err.x) - pose.theta;
+    }
+    if (pos_err.x < 0 && pos_err.y < 0){
+        theta = M_PI + atan(pos_err.y/pos_err.x) - pose.theta;
+    }
+    if (pos_err.x >= 0 && pos_err.y < 0){
+        theta = 2*M_PI - atan(-pos_err.y/pos_err.x) - pose.theta;
+    }
+    if (theta>=M_PI){
+        theta = theta-2*M_PI;
+    }
+    if (r<=0.001){
+        printf("Reach the goal！！！！！！！！！！！！！！！！");
+        break;
+    }
+
+    vel_msg.linear.x = (0.5 * r);
+    vel_msg.angular.z = (1.2 * theta);
     turtlesim_pub.publish(vel_msg);
 
     count ++;
@@ -73,7 +92,5 @@ int main(int argc, char **argv)
     loop_rate.sleep();
   }
   return 0;
+
 }
-
-
-
